@@ -1,0 +1,6 @@
+#gap_sdk
+numpy==1.16.5
+Pillow==7.2.0
+tensorflow==1.15
+torch==1.8.1
+torchvision==0.9.1
