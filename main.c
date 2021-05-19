@@ -76,21 +76,21 @@ void body(void* parameters)
 
     PRINTF("DNN inference\n");
 #ifdef PERF_COUNT
-    int tm = rt_time_get_us();
+    int tm = pi_time_get_us();
 #endif
     pi_cluster_task(&cluster_task, (void (*)(void *))cluster_inference, NULL);
     cluster_task.slave_stack_size = CL_SLAVE_STACK_SIZE;
     cluster_task.stack_size = CL_STACK_SIZE;
     pi_cluster_send_task_to_cl(&cluster_dev, &cluster_task);
 #ifdef PERF_COUNT
-    tm = rt_time_get_us() - tm;
+    tm = pi_time_get_us() - tm;
     PRINTF("DNN inference finished in %d us\n", tm);
 #endif
     PRINTF("DNN inference done with status: %d\n", detector_status);
 
     modelCNN_Destruct();
 
-    signed char outclass;
+    short int outclass = 0;
     signed char max_score = -127;
 	for(int i=0; i < NETWORK_CLASSES; i++){
         PRINTF("%d\n", network_output[i]);
