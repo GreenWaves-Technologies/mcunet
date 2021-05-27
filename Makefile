@@ -2,6 +2,8 @@ USE_PMSIS_BSP=1
 export GAP_USE_OPENOCD=1
 io=host
 
+MODEL_GEN_EXTRA_FLAGS += --L1 50000 --L2 200000 --L3 4000000
+
 MODEL_GEN = modelKernels
 MODEL_GEN_C = $(addsuffix .c, $(MODEL_GEN))
 MODEL_GEN_CLEAN = $(DETECTOR_GEN_C) $(addsuffix .h, $(MODEL_GEN))
@@ -19,12 +21,13 @@ GenNet: model.c
 	model.c \
 	"$(TILER_CNN_GENERATOR_PATH_SQ8)/CNN_Generators_SQ8.c" \
 	"$(TILER_CNN_GENERATOR_PATH_SQ8)/RNN_Generators_SQ8.c" \
+	"$(TILER_CNN_GENERATOR_PATH)/CNN_Copy_Generators.c" \
 	"$(TILER_CNN_GENERATOR_PATH)/CNN_Generator_Util.c" \
 	"$(NNTOOL_GENERATOR_PATH)/nntool_extra_generators.c" \
 	$(TILER_LIB)
 
 $(MODEL_GEN_C): GenNet
-	./GenNet
+	./GenNet $(MODEL_GEN_EXTRA_FLAGS)
 
 tiler_model: $(MODEL_GEN_C)
 
@@ -33,6 +36,7 @@ build: tiler_model
 CNN_KERNELS_SRC = \
   $(wildcard $(TILER_CNN_KERNEL_PATH_SQ8)/CNN_*SQ8.c) \
   $(TILER_CNN_KERNEL_PATH_SQ8)/CNN_AT_Misc.c \
+  $(TILER_CNN_KERNEL_PATH)/CNN_CopyBasicKernels.c \
   $(wildcard $(NNTOOL_KERNELS_PATH)/*.c)
 
 APP_SRCS = \
@@ -46,10 +50,11 @@ APP_INC += "$(PWD)" \
 	"$(TILER_CNN_KERNEL_PATH_SQ8)" \
 	"$(NNTOOL_KERNELS_PATH)" \
 	"$(TILER_CNN_KERNEL_PATH)" \
+	"$(GAP_LIB_PATH)/include" \
     
 
 DATA_FILES = model_L3_Flash_Const.dat
-APP_CFLAGS += -g -Os
+APP_CFLAGS += -g -O3
 
 SRCS = 
 

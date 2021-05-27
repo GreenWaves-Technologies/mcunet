@@ -41,20 +41,6 @@ void body(void* parameters)
     pi_cluster_open(&cluster_dev);
     PRINTF("Init cluster...done\n");
 
-    PRINTF("Reading input from host...\n");
-    struct pi_hostfs_conf host_fs_conf;
-    pi_hostfs_conf_init(&host_fs_conf);
-    struct pi_device host_fs;
-
-    pi_open_from_conf(&host_fs, &host_fs_conf);
-
-    if (pi_fs_mount(&host_fs))
-    {
-        PRINTF("pi_fs_mount failed\n");
-        pmsis_exit(-1);
-    }
-
-    pi_fs_file_t* host_file = NULL;
     int input_size = IMAGE_WIDTH*IMAGE_HEIGHT*sizeof(char);
 
     if (ReadImageFromFile("../../../dataset/ILSVRC2012_val_00011158_160.ppm",
@@ -102,9 +88,6 @@ void body(void* parameters)
 	}
 	PRINTF("Predicted class:\t%d\n", outclass);
 	PRINTF("With confidence:\t%d\n", max_score);
-
-    pi_fs_unmount(&host_fs);
-    PRINTF("FS unmount done!\n");
 
     pi_cluster_close(&cluster_dev);
 
