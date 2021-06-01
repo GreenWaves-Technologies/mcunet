@@ -1,0 +1,15 @@
+open models/mcunet-512kb-2mb_imagenet.tflite -q
+set debug true
+# The next 2 options add printf to inference code before each layer
+set graph_produce_node_names true
+set graph_trace_exec true
+# model name in generated code: function name, source files name, etc
+set graph_name model
+# no need to set input_norm_func since we insert imageformat and will do it for you
+#set input_norm_func 'x:x.astype(np.int8)'
+adjust
+fusions --scale8
+imageformat input_1 rgb888 offset_int8
+show > show.txt
+save_state nnquant
+gen model.c -t -T tensors 
