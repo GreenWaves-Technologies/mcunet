@@ -14,10 +14,6 @@ aquant -f 8 quant_data_ppm/* -T
 imageformat input_1 rgb888 offset_int8
 set input_norm_func 'x:x'
 
-# dump ILSVRC2012_val_00011158_160.ppm -S tensor_float -P file_float.npy
-# dump ILSVRC2012_val_00011158_160.ppm -S tensor_quant -q -P file_quant.npy
-# dump ILSVRC2012_val_00011158_160.ppm -S tensor_dequant -q -d -P file_dequant.npy
-
 show > show.txt
 save_state nnquant
 gen model.c -t -T tensors 

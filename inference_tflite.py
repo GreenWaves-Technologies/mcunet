@@ -50,18 +50,24 @@ def main():
     
     #read image and resize
     img = Image.open(args.input_image)
-    img = img.resize((input_details[0]['shape'][1], input_details[0]['shape'][2]))
-    input_array = np.array(img, dtype=np.int8)
-    input_array = np.reshape(input_array, input_details[0]['shape']).astype(np.int8)
-    
-    #set interpreter tensor and invoke
-    print(input_details)
+    input_array = np.reshape(img, input_details[0]['shape'])
+    input_array = np.array(input_array, np.float32)
+    print("original input")
+    print(input_array)
+
+    input_array = input_array - 128
+    input_array = np.array(input_array, np.int8)
+
+    print("preprocessed input")
+    print(input_array)
+
     interpreter.set_tensor(input_details[0]['index'], input_array)
     interpreter.invoke()
     output = interpreter.get_tensor(output_details[0]['index'])
-    print(output)
+    print(output[0])
     print(type(output))
-    print("Predicted class:\t{}\nWith confidence:\t{}".format(np.argmax(output), output[0, np.argmax(output)]))
+    print(output.shape)
+    print("Predicted class:\t{}\nWith confidence:\t{}".format(np.argmax(output) + 1, output[0, np.argmax(output)]))
 
 if __name__ == '__main__':
     main()
