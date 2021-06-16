@@ -21,7 +21,6 @@ GenNet: model.c
 	model.c \
 	"$(TILER_CNN_GENERATOR_PATH_SQ8)/CNN_Generators_SQ8.c" \
 	"$(TILER_CNN_GENERATOR_PATH_SQ8)/RNN_Generators_SQ8.c" \
-	"$(TILER_CNN_GENERATOR_PATH)/CNN_Copy_Generators.c" \
 	"$(TILER_CNN_GENERATOR_PATH)/CNN_Generator_Util.c" \
 	"$(NNTOOL_GENERATOR_PATH)/nntool_extra_generators.c" \
 	$(TILER_LIB)
@@ -36,7 +35,6 @@ build: tiler_model
 CNN_KERNELS_SRC = \
   $(wildcard $(TILER_CNN_KERNEL_PATH_SQ8)/CNN_*SQ8.c) \
   $(TILER_CNN_KERNEL_PATH_SQ8)/CNN_AT_Misc.c \
-  $(TILER_CNN_KERNEL_PATH)/CNN_CopyBasicKernels.c \
   $(wildcard $(NNTOOL_KERNELS_PATH)/*.c)
 
 APP_SRCS = \
@@ -72,4 +70,3 @@ clean::
 .PHONY: tiler_model all clean
 
 include $(RULES_DIR)/pmsis_rules.mk
-    
