@@ -5,8 +5,13 @@
 PyTorch model as well as its quantized TFLite version are taken from the original 
 [MCUNet repo](https://github.com/mit-han-lab/tinyml/tree/master/mcunet)
 
+## Quantization Data
+
+Before NNTool conversion, you need to download data to quantize the model on.
+Follow [the link](https://drive.google.com/drive/folders/1BLZJic1oSRe9z2NliH70_QiK8Qehtuc9?usp=sharing) to dowload prepared data and put it in the project folder so it has a location: `mcunet/quant_data_ppm`. It will be used on the next step during conversion process.
+
 ## Convert model with NNTool
-Change model path or some other steps for NNTool in convert_model.nnscript. Then run:
+Change model path or some other steps for NNTool in `convert_model.nnscript`. Then run:
 
 ```
 ./convert_model.sh
