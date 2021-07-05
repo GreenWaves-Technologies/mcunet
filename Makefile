@@ -20,9 +20,8 @@ GenNet: model.c
 	-I"$(PWD)/../" \
 	model.c \
 	"$(TILER_CNN_GENERATOR_PATH_SQ8)/CNN_Generators_SQ8.c" \
-	"$(TILER_CNN_GENERATOR_PATH_SQ8)/RNN_Generators_SQ8.c" \
+	"$(TILER_CNN_GENERATOR_PATH)/CNN_Copy_Generators.c" \
 	"$(TILER_CNN_GENERATOR_PATH)/CNN_Generator_Util.c" \
-	"$(NNTOOL_GENERATOR_PATH)/nntool_extra_generators.c" \
 	$(TILER_LIB)
 
 $(MODEL_GEN_C): GenNet
@@ -35,7 +34,8 @@ build: tiler_model
 CNN_KERNELS_SRC = \
   $(wildcard $(TILER_CNN_KERNEL_PATH_SQ8)/CNN_*SQ8.c) \
   $(TILER_CNN_KERNEL_PATH_SQ8)/CNN_AT_Misc.c \
-  $(wildcard $(NNTOOL_KERNELS_PATH)/*.c)
+  $(TILER_CNN_KERNEL_PATH)/CNN_CopyBasicKernels.c
+
 
 APP_SRCS = \
   main.c \
@@ -46,7 +46,6 @@ APP_SRCS = \
 APP_INC += "$(PWD)" \
 	"$(TILER_INC)" \
 	"$(TILER_CNN_KERNEL_PATH_SQ8)" \
-	"$(NNTOOL_KERNELS_PATH)" \
 	"$(TILER_CNN_KERNEL_PATH)" \
 	"$(GAP_LIB_PATH)/include" \
     

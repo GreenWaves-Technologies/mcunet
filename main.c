@@ -119,7 +119,7 @@ void body(void* parameters)
     char buf[2];
     for(int i=0; i < NETWORK_CLASSES; i++){
        sprintf(buf, "%d;", network_output[i]);
-       printf("%s\n", buf);
+       //printf("%s\n", buf);
        pi_fs_write(host_file, buf, strlen(buf));
     }
     pi_fs_close(host_file);
