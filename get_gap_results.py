@@ -28,10 +28,12 @@ if __name__ == '__main__':
         csv_name = file.replace("/", "_")
         csv_name = csv_name.replace(".ppm", ".csv")
         print(csv_name)
-        run_string = "gapy --target=gapuino_v2 --platform=gvsoc \
-                        --work-dir=/home/vkoriuki/Repos/mcunet/BUILD/GAP8_V2/GCC_RISCV\
-                        --config-opt=flash/content/partitions/readfs/files=/home/vkoriuki/Repos/mcunet/model_L3_Flash_Const.dat \
-                        run --exec-prepare --exec --binary=test"
+        run_string = "gapy --target=gapuino --platform=gvsoc \
+            --work-dir=/media/vkoriukina/2048affa-7307-45b5-babc-21ccb6136387/vkoriuki/Repos/mcunet/BUILD/GAP8/GCC_RISCV \
+            --config-opt=**/flash/content/partitions/readfs/files=/media/vkoriukina/2048affa-7307-45b5-babc-21ccb6136387/vkoriuki/Repos/mcunet/model_L3_Flash_Const.dat \
+            --config-opt=flash/content/partitions/readfs/files=/media/vkoriukina/2048affa-7307-45b5-babc-21ccb6136387/vkoriuki/Repos/mcunet/model_L3_Flash_Const.dat \
+            run --exec-prepare --exec --binary=/media/vkoriukina/2048affa-7307-45b5-babc-21ccb6136387/vkoriuki/Repos/mcunet/BUILD/GAP8/GCC_RISCV/test"
+
         os.system(run_string)
         shutil.copy2("gap_result.csv", os.path.join(out_dir, csv_name))
 
