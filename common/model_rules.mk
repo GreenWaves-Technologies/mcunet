@@ -36,6 +36,7 @@ endif
 
 $(MODEL_BUILD):
 	mkdir $(MODEL_BUILD)
+	echo "#define model_L3_Flash 0" > $(MODEL_BUILD)/model.h
 
 $(MODEL_PATH): $(TRAINED_MODEL) | $(MODEL_BUILD)
 	cp $< $@
