@@ -1,35 +1,39 @@
-USE_PMSIS_BSP=1
-export GAP_USE_OPENOCD=1
+# Copyright (C) 2017 GreenWaves Technologies
+# All rights reserved.
+
+# This software may be modified and distributed under the terms
+# of the BSD license.  See the LICENSE file for details.
+
+ifndef GAP_SDK_HOME
+  $(error Source sourceme in gap_sdk first)
+endif
+
+include common.mk
+include $(RULES_DIR)/at_common_decl.mk
+
 io=host
 
-MODEL_GEN_EXTRA_FLAGS += --L1 50000 --L2 200000 --L3 4000000
+RAM_FLASH_TYPE ?= HYPER
+#PMSIS_OS=freertos
 
-MODEL_GEN = modelKernels
-MODEL_GEN_C = $(addsuffix .c, $(MODEL_GEN))
-MODEL_GEN_CLEAN = $(DETECTOR_GEN_C) $(addsuffix .h, $(MODEL_GEN))
+ifeq '$(RAM_FLASH_TYPE)' 'HYPER'
+APP_CFLAGS += -DUSE_HYPER
+MODEL_L3_EXEC=hram
+MODEL_L3_CONST=hflash
+else
+APP_CFLAGS += -DUSE_SPI
+CONFIG_SPIRAM = 1
+MODEL_L3_EXEC=qspiram
+MODEL_L3_CONST=qpsiflash
+endif
 
-GenNet: model.c
-	gcc -fcommon -o $@ $(TILER_PLATFORM_FLAGS) \
-	-I$(TILER_EMU_INC) \
-	-I"$(TILER_INC)" \
-	-I"$(TILER_CNN_GENERATOR_PATH)" \
-	-I"$(TILER_CNN_GENERATOR_PATH_SQ8)" \
-	-I"$(TILER_CNN_KERNEL_PATH_SQ8)" \
-	-I"$(NNTOOL_GENERATOR_PATH)" \
-	-I"$(TILER_CNN_KERNEL_PATH)" \
-	-I"$(PWD)/../" \
-	model.c \
-	"$(TILER_CNN_GENERATOR_PATH_SQ8)/CNN_Generators_SQ8.c" \
-	"$(TILER_CNN_GENERATOR_PATH)/CNN_Copy_Generators.c" \
-	"$(TILER_CNN_GENERATOR_PATH)/CNN_Generator_Util.c" \
-	$(TILER_LIB)
+$(info Building NNTOOL model)
+NNTOOL_EXTRA_FLAGS ?= 
 
-$(MODEL_GEN_C): GenNet
-	./GenNet $(MODEL_GEN_EXTRA_FLAGS)
+include common/model_decl.mk
 
-tiler_model: $(MODEL_GEN_C)
-
-build: tiler_model
+# pulpChip = GAP
+# PULP_APP = $(MODEL_PREFIX)
 
 CNN_KERNELS_SRC = \
   $(wildcard $(TILER_CNN_KERNEL_PATH_SQ8)/CNN_*SQ8.c) \
@@ -39,33 +43,33 @@ CNN_KERNELS_SRC = \
 
 APP_SRCS = \
   main.c \
-  modelKernels.c \
+  $(MODEL_BUILD)/modelKernels.c \
   $(CNN_KERNELS_SRC)\
   $(GAP_LIB_PATH)/img_io/ImgIO.c
 
 APP_INC += "$(PWD)" \
+	"$(MODEL_BUILD)" \
 	"$(TILER_INC)" \
 	"$(TILER_CNN_KERNEL_PATH_SQ8)" \
 	"$(TILER_CNN_KERNEL_PATH)" \
 	"$(GAP_LIB_PATH)/include" \
     
 
-DATA_FILES = model_L3_Flash_Const.dat
+DATA_FILES = $(MODEL_BUILD)/model_L3_Flash_Const.dat
 APP_CFLAGS += -g -O3
 
-SRCS = 
 
 ifeq ($(ALREADY_FLASHED),1)
 # everything is already on board
 else
   READFS_FILES+=$(realpath $(DATA_FILES))
 endif
+# all depends on the model
+all:: model
 
-clean::
-	rm -f GenNet
-	rm -f $(MODEL_GEN_CLEAN)
-	rm -f model_L3_Flash_Const.dat
+clean:: clean_model
 
-.PHONY: tiler_model all clean
-
+include common/model_rules.mk
+$(info APP_SRCS... $(APP_SRCS))
+$(info APP_CFLAGS... $(APP_CFLAGS))
 include $(RULES_DIR)/pmsis_rules.mk

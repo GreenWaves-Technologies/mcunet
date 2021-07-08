@@ -68,7 +68,7 @@ void body(void* parameters)
 
     int input_size = IMAGE_WIDTH*IMAGE_HEIGHT*sizeof(char);
     //char* dir_name = "quant_data";
-    char* filename = "../../../image.ppm";
+    char* filename = "../../../dataset/ILSVRC2012_val_00011158_160.ppm";
 
     PRINTF("After cluster init\n");
     if (ReadImageFromFile(filename,
