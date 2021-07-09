@@ -1,56 +1,41 @@
 #include "pmsis.h"
 #include "bsp/fs.h"
-#include "bsp/fs/readfs.h"
+//#include "bsp/fs/readfs.h"
 #include "bsp/fs/hostfs.h"
-#include "bsp/flash/hyperflash.h"
-#include "bsp/ram/hyperram.h"
+//#include "bsp/flash/hyperflash.h"
+//#include "bsp/ram/hyperram.h"
 #include "gaplib/ImgIO.h"
 #include "Gap.h"
-#include "gaplib/ImgIO.h"
 #include "setup.h"
-#include "modelKernels.h"
+#include "MCUNetKernels.h"
 
-signed char network_input[INPUT_SIZE];
-signed char network_output[NETWORK_CLASSES];
+PI_L2 signed char network_input[INPUT_SIZE];
+PI_L2 signed char network_output[NETWORK_CLASSES];
 
 int detector_status;
 
-void cluster_inference(void* args)
+static void nn_inference(void)
 {
-    (void)args;
-    // TODO: Update model output
-	//for(int i=0; i < INPUT_SIZE; i++){
-    //    PRINTF("%d\n", network_input[i]);
-    //}
-    detector_status = modelCNN(network_input, network_output);
-}
+    
+    detector_status = MCUNetCNN(network_input, network_output);
 
+    return;
+}
 void body(void* parameters)
 {
     (void) parameters;
 
-    PRINTF("Init cluster...\n");
     struct pi_device cluster_dev;
     struct pi_cluster_conf cluster_conf;
-    struct pi_cluster_task cluster_task;
+    struct pi_cluster_task *cl_task;    
 
     struct pi_hostfs_conf host_fs_conf;
-    pi_hostfs_conf_init(&host_fs_conf);
     struct pi_device host_fs;
 
-    pi_cluster_conf_init(&cluster_conf);
-    cluster_conf.id = 0;
-    cluster_conf.device_type = 0;
-
-    pi_open_from_conf(&cluster_dev, &cluster_conf);
-
-    PRINTF("before pi_cluster_open\n");
-    pi_cluster_open(&cluster_dev);
-    PRINTF("Init cluster...done\n");
-
+    pi_hostfs_conf_init(&host_fs_conf);
     pi_open_from_conf(&host_fs, &host_fs_conf);
 
-    if (pi_fs_mount(&host_fs))
+     if (pi_fs_mount(&host_fs))
     {
         PRINTF("pi_fs_mount failed\n");
         pmsis_exit(-4);
@@ -66,11 +51,10 @@ void body(void* parameters)
     }
 
 
-    int input_size = IMAGE_WIDTH*IMAGE_HEIGHT*sizeof(char);
+     int input_size = IMAGE_WIDTH*IMAGE_HEIGHT*sizeof(char);
     //char* dir_name = "quant_data";
     char* filename = "../../../dataset/ILSVRC2012_val_00011158_160.ppm";
 
-    PRINTF("After cluster init\n");
     if (ReadImageFromFile(filename,
         IMAGE_WIDTH, IMAGE_HEIGHT, IMAGE_CHANNELS,
         network_input, INPUT_SIZE*sizeof(char), IMGIO_OUTPUT_CHAR, 0))
@@ -80,7 +64,13 @@ void body(void* parameters)
     }
     printf("Finished reading image\n");
 
-    int status = modelCNN_Construct();
+    pi_cluster_conf_init(&cluster_conf);
+    pi_open_from_conf(&cluster_dev, (void *)&cluster_conf);
+
+    PRINTF("Cluster Open\n");
+    pi_cluster_open(&cluster_dev);
+
+    int status = MCUNetCNN_Construct();
     PRINTF("Detector initialized with status %d\n", status);
     if (status)
     {
@@ -88,21 +78,24 @@ void body(void* parameters)
     }
     PRINTF("Network init done\n");
 
-    PRINTF("DNN inference\n");
-#ifdef PERF_COUNT
-    int tm = pi_time_get_us();
-#endif
-    pi_cluster_task(&cluster_task, (void (*)(void *))cluster_inference, NULL);
-    cluster_task.slave_stack_size = CL_SLAVE_STACK_SIZE;
-    cluster_task.stack_size = CL_STACK_SIZE;
-    pi_cluster_send_task_to_cl(&cluster_dev, &cluster_task);
-#ifdef PERF_COUNT
-    tm = pi_time_get_us() - tm;
-    PRINTF("DNN inference finished in %d us\n", tm);
-#endif
-    PRINTF("DNN inference done with status: %d\n", detector_status);
+    cl_task = pmsis_l2_malloc(sizeof(struct pi_cluster_task));
+    if(cl_task==NULL) {
+      printf("pi_cluster_task alloc Error!\n");
+      pmsis_exit(-1);
+    }
+    PRINTF("Stack size is %d and %d\n",CL_STACK_SIZE,CL_SLAVE_STACK_SIZE );
+    memset(cl_task, 0, sizeof(struct pi_cluster_task));
+    cl_task->entry = (void *) &nn_inference;
+    cl_task->stack_size = CL_STACK_SIZE;
+    cl_task->slave_stack_size = CL_SLAVE_STACK_SIZE;
+    cl_task->arg = NULL;
 
-    modelCNN_Destruct();
+    // Execute the function "nn_inference" on the cluster.
+    pi_cluster_send_task_to_cl(&cluster_dev, cl_task);
+
+    pmsis_l2_malloc_free(cl_task, sizeof(struct pi_cluster_task));
+    
+    MCUNetCNN_Destruct();
 
     short int outclass = 0;
     signed char max_score = -127;

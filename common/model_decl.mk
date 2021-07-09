@@ -30,7 +30,7 @@ MODEL_GEN_CLEAN = $(MODEL_GEN_C) $(addsuffix .h, $(MODEL_GEN)) $(MODEL_EXPRESSIO
 MODEL_GEN_EXE = $(MODEL_BUILD)/GenTile
 
 ifdef MODEL_QUANTIZED
-  NNTOOL_EXTRA_FLAGS = #-q
+  NNTOOL_EXTRA_FLAGS = -q
 endif
 
 MODEL_GENFLAGS_EXTRA?=
@@ -48,3 +48,4 @@ NNTOOL?=nntool
 # qpsiflash - Quad SPI Flash
 MODEL_L3_EXEC?=hram
 $(info GEN ... $(CNN_GEN))
+include $(RULES_DIR)/at_common_decl.mk

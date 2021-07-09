@@ -44,7 +44,9 @@ CLUSTER_NUM_CORES=8
 
 ifeq ($(MODEL_FORMAT), onnx)
   NNTOOL_SCRIPT = models/nntool_scripts/nntool_script_onnx
+  MODEL_QUANTIZED=0
 else ifeq ($(MODEL_FORMAT), tflite)
   NNTOOL_SCRIPT = models/nntool_scripts/nntool_script_tflite
+  MODEL_QUANTIZED=1
 endif
 $(info GEN ... $(CNN_GEN))

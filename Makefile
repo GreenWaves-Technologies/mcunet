@@ -1,4 +1,4 @@
-# Copyright (C) 2017 GreenWaves Technologies
+# Copyright (C) 2021 GreenWaves Technologies
 # All rights reserved.
 
 # This software may be modified and distributed under the terms
@@ -9,9 +9,11 @@ ifndef GAP_SDK_HOME
 endif
 
 include common.mk
-include $(RULES_DIR)/at_common_decl.mk
+
 
 io=host
+
+MODEL_PREFIX=MCUNet
 
 RAM_FLASH_TYPE ?= HYPER
 #PMSIS_OS=freertos
@@ -37,8 +39,8 @@ MODEL_L1_MEMORY=$(shell expr $(TARGET_L1_SIZE) \- $(TOTAL_STACK_SIZE))
 MODEL_L2_MEMORY=200000
 MODEL_L3_MEMORY=$(TARGET_L3_SIZE)
 
-# pulpChip = GAP
-# PULP_APP = $(MODEL_PREFIX)
+#pulpChip = GAP
+#PULP_APP = $(MODEL_PREFIX)
 
 CNN_KERNELS_SRC = \
   $(wildcard $(TILER_CNN_KERNEL_PATH_SQ8)/CNN_*SQ8.c) \
@@ -48,7 +50,7 @@ CNN_KERNELS_SRC = \
 
 APP_SRCS = \
   main.c \
-  $(MODEL_BUILD)/modelKernels.c \
+  $(MODEL_BUILD)/$(MODEL_PREFIX)Kernels.c \
   $(CNN_KERNELS_SRC)\
   $(GAP_LIB_PATH)/img_io/ImgIO.c
 
@@ -61,15 +63,12 @@ APP_INC += "$(PWD)" \
 	"$(GAP_LIB_PATH)/include" \
     
 
-DATA_FILES = $(MODEL_BUILD)/model_L3_Flash_Const.dat
-APP_CFLAGS += -g -O3
+DATA_FILES = $(MODEL_BUILD)/$(MODEL_PREFIX)_L3_Flash_Const.dat
+APP_CFLAGS += -O3 -g -DPERF_COUNT=0
 
 
-ifeq ($(ALREADY_FLASHED),1)
-# everything is already on board
-else
-  READFS_FILES+=$(realpath $(DATA_FILES))
-endif
+READFS_FILES+=$(realpath $(DATA_FILES))
+
 # all depends on the model
 all:: model
 
