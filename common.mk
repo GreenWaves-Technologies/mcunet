@@ -30,7 +30,7 @@ MODEL_GEN_C = $(addsuffix .c, $(MODEL_GEN))
 MODEL_GEN_CLEAN = $(MODEL_GEN_C) $(addsuffix .h, $(MODEL_GEN))
 MODEL_GEN_EXE = $(MODEL_BUILD)/GenTile
 
-MODEL_EXPRESSIONS = $(MODEL_BUILD)/Expression_Kernels.c
+MODEL_EXPRESSIONS = #$(MODEL_BUILD)/Expression_Kernels.c
 
 # Memory sizes for cluster L1, SoC L2 and Flash
 TARGET_L1_SIZE = 64000
