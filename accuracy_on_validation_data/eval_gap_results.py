@@ -18,7 +18,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--dataset', default='imagenet', type=str)
 parser.add_argument('--val-dir', default='dataset/imagenet/val',
                     help='path to validation data')
-parser.add_argument('--gap-dir', default='dataset/imagenet/gap_union',
+parser.add_argument('--gap-dir', default='dataset/imagenet/gap_outputs',
                     help='path to gap csv data')
 parser.add_argument('--batch-size', type=int, default=256,
                     help='input batch size for training')
