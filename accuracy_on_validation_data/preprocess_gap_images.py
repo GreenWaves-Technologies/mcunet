@@ -26,13 +26,14 @@ if __name__ == '__main__':
     	  transforms.CenterCrop(resolution)
         ])
     os.makedirs(args.out_dir, exist_ok=True)
-    #for path, subdirs, names in tqdm(os.walk(args.val_dir)):
-        #for subdir in sorted(subdirs):
-            #os.makedirs(os.path.join(args.out_dir, subdir), exist_ok=True)
-    for file in os.listdir(args.val_dir):
+    images_list = []
+    for path, subdirs, files in os.walk(args.val_dir):
+        os.makedirs(os.path.join(args.out_dir, os.path.basename(path)), exist_ok=True)
+        for name in files:
+            images_list.append(os.path.join(os.path.basename(path), name))
+    for file in tqdm(images_list):
         img = Image.open(os.path.join(args.val_dir, file))
         img = transform(img)
         img = img.convert('RGB')
 
-        #img.save(os.path.join(args.out_dir, subdir, file), 'JPEG', quality=100, subsampling=0)
         img.save(os.path.join(args.out_dir, file.replace(".JPEG", ".ppm")))

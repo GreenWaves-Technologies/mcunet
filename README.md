@@ -34,33 +34,49 @@ make clean all run platform=gvsoc MODEL_FORMAT=tflite
 ```
 
 ## Evaluation
-Fist thing you need to do is to navigate to the `accuracy_on_validation_data`:
 ```
-cd accuracy_on_validation_data
+For evaluation process we suggest to use emulator as it tremendously increase its speed.
+To rebuild the project with it, navigate to `accuracy_on_validation` folder:
 ```
+cd accuracy_on_validation
+```
+Then, you will need to create a symbolic link to quantization data by running:
+```
+ln -s ../quant_data_ppm/ quant_data_ppm
+```
+and finally run:
+```
+make all -f emul.mk MODEL_FORMAT=onnx
+```
+or
+```
+make all -f emul.mk MODEL_FORMAT=tflite
+```
+depending on chosen model.
 
-To evaluate the model you will need to dump the results on the properly preprocessed data which is preprocessed the same way as for the original model.
-We are using a [3923 images subset](https://drive.google.com/file/d/1HZ1vgkJ2KYQpRzs0Y20aG8eUYkCb7ME0/) from validation imagenet dataset.
-To preprocess them, run:
+To evaluate the model you will need to dump the results on the properly preprocessed data which is transformed the same way it was for the original model.
+Download evaluation data by running the appropriate script:
 ```
-python3 preprocess_gap_images.py --val-dir /path/to/original/val/data  --out-dir /path/to/preprocessed/data
+./download_eval_data.sh
+```
+And then to preprocess it, run:
+```
+python3 preprocess_gap_images.py --val-dir imagenet_gap/val  --out-dir preprocessed_data
 ```
 After that you can dump the results with:
 ```
-python3 get_gap_results.py --in_dir /path/to/preprocessed/data--out_dir /path/to/results/folder
-
+python3 get_gap_results.py --in_dir preprocessed_data --out_dir gap_results 
 ```
-Next step is to evaluate the obtained for each image outputs with the command below:
+Next step is to evaluate the obtained output for each image with the command below:
 ```
-python3 eval_gap.py --val-dir /path/to/preprocessed/data --gap-dir  /path/to/results/folder
-
+python3 eval_gap_results.py --val-dir imagenet_gap/val --gap-dir gap_results
 ```
 
-For [3923 images subset](https://drive.google.com/file/d/1HZ1vgkJ2KYQpRzs0Y20aG8eUYkCb7ME0/) from validation imagenet dataset the metrics are the following:
+ the metrics are the following:
 | MODEL | Top-1 Accuracy, % | Top-5 Accuracy, % |
 |-------|------------------------|------------------------|
 | MCUNet 512kB-2MB PyTorch Float32  |  68.2 |  88 |
 | MCUNet 512kB-2MB ONNX Float32  |  68.09 |  87.97 |
 | MCUNet 512kB-2MB TFlite Int8  |  67.68 |  87.64  |
-| MCUNet 512kB-2MB ONNX GAP Int8  |  66.45 |  87.36 |
+| MCUNet 512kB-2MB ONNX GAP Int8  |  67.04 |  87.20 |
 | MCUNet 512kB-2MB TFlite GAP Int8  |  67.07 |  87.25 |
