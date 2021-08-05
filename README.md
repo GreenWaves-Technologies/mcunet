@@ -34,7 +34,7 @@ make clean all run platform=gvsoc MODEL_FORMAT=tflite
 ```
 
 ## Evaluation
-```
+
 For evaluation process we suggest to use emulator as it tremendously increase its speed.
 To rebuild the project with it, navigate to `accuracy_on_validation` folder:
 ```
@@ -72,7 +72,7 @@ Next step is to evaluate the obtained output for each image with the command bel
 python3 eval_gap_results.py --val-dir imagenet_gap/val --gap-dir gap_results
 ```
 
- the metrics are the following:
+The comparison metrics table for all of the models is the following:
 | MODEL | Top-1 Accuracy, % | Top-5 Accuracy, % |
 |-------|------------------------|------------------------|
 | MCUNet 512kB-2MB PyTorch Float32  |  68.2 |  88 |
