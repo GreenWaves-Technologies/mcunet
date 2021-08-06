@@ -1,1 +1,0 @@
-#define model_L3_Flash 0
