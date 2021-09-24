@@ -8,8 +8,9 @@ ifndef GAP_SDK_HOME
   $(error Source sourceme in gap_sdk first)
 endif
 
-include common.mk
+MODEL_FORMAT?=tflite
 
+include common.mk
 
 io=host
 
