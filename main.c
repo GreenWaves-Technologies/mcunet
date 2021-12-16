@@ -53,7 +53,7 @@ void body(void* parameters)
 
      int input_size = IMAGE_WIDTH*IMAGE_HEIGHT*sizeof(char);
     //char* dir_name = "quant_data";
-    char* filename = "../../../dataset/ILSVRC2012_val_00011158_160.ppm";
+    char* filename = "../../../dataset/goldfish.ppm";
 
     if (ReadImageFromFile(filename,
         IMAGE_WIDTH, IMAGE_HEIGHT, IMAGE_CHANNELS,

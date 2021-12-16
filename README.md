@@ -22,7 +22,7 @@ To do so simply run:
 ## Inference On GAP8
 
 You can run the application on GAP8 (or platform simulator gvsoc).
-If you want to use onnx model, run:
+If you want to use onnx model, you need first to download the post training quantization dataset and then run:
 
 ```
 make clean all run platform=gvsoc MODEL_FORMAT=onnx
