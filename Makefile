@@ -67,13 +67,13 @@ APP_SRCS = \
   $(CNN_KERNELS_SRC)\
   $(GAP_LIB_PATH)/img_io/ImgIO.c
 
-APP_INC += "$(PWD)" \
-	"$(MODEL_BUILD)" \
-	"$(TILER_INC)" \
-	"$(TILER_CNN_KERNEL_PATH_FP16)" \
-  "$(TILER_CNN_KERNEL_PATH_SQ8)" \
-	"$(TILER_CNN_KERNEL_PATH)" \
-	"$(GAP_LIB_PATH)/include" \
+APP_INC += . \
+	$(MODEL_BUILD) \
+	$(TILER_INC) \
+	$(TILER_CNN_KERNEL_PATH_FP16) \
+  $(TILER_CNN_KERNEL_PATH_SQ8) \
+	$(TILER_CNN_KERNEL_PATH) \
+	$(GAP_LIB_PATH)/include \
     
 
 DATA_FILES = $(MODEL_BUILD)/$(MODEL_PREFIX)_L3_Flash_Const.dat
