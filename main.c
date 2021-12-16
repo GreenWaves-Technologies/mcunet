@@ -109,6 +109,13 @@ void body(void* parameters)
     PRINTF("Predicted class:\t%d\n", outclass + 1);
     PRINTF("With confidence:\t%d\n", max_score);
 
+    #ifdef CI
+    if(outclass + 1 != 2 && max_score < 65){
+        printf("Eval Error...\n");
+        pmsis_exit(-1);
+    }
+    #endif
+
     char buf[2];
     for(int i=0; i < NETWORK_CLASSES; i++){
        sprintf(buf, "%d;", network_output[i]);
