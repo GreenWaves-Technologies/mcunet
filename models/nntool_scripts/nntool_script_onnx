@@ -3,7 +3,7 @@ set debug true
 adjust
 fusions --scale8
 set input_norm_func 'x:(x/255 - 0.5)/0.5'
-aquant -f 8 quant_data_ppm/* -T
+aquant -f 8 quant_data_ppm/* -T -H 160 -W 160
 imageformat input_1 rgb888 offset_int8
 set input_norm_func 'x:x'
 #set graph_name model
