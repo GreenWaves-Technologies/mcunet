@@ -87,6 +87,11 @@ void body(void* parameters)
     PRINTF("Stack size is %d and %d\n",CL_STACK_SIZE,CL_SLAVE_STACK_SIZE );
     pi_cluster_task(cl_task, &nn_inference, NULL);
     pi_cluster_task_stacks(cl_task, NULL, CL_SLAVE_STACK_SIZE);
+    #if defined(__GAP8__)
+    task->entry = &nn_inference;
+    task->stack_size = CL_STACK_SIZE;
+    task->slave_stack_size = CL_SLAVE_STACK_SIZE;
+    #endif
 
     // Execute the function "nn_inference" on the cluster.
     pi_cluster_send_task_to_cl(&cluster_dev, cl_task);
