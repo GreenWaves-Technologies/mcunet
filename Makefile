@@ -58,7 +58,7 @@ endif
 CNN_KERNELS_SRC = \
   $(wildcard $(TILER_CNN_KERNEL_PATH_SQ8)/CNN_*SQ8.c) \
   $(TILER_CNN_KERNEL_PATH_SQ8)/CNN_AT_Misc.c \
-  $(TILER_CNN_KERNEL_PATH)/CNN_CopyBasicKernels.c
+  $(TILER_CNN_KERNEL_PATH)/CNN_Copy.c
 
 
 APP_SRCS = \
