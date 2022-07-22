@@ -65,6 +65,7 @@ void body(void* parameters)
     printf("Finished reading image\n");
 
     pi_cluster_conf_init(&cluster_conf);
+    cluster_conf.cc_stack_size = CL_STACK_SIZE;
     pi_open_from_conf(&cluster_dev, (void *)&cluster_conf);
 
     PRINTF("Cluster Open\n");
@@ -84,11 +85,13 @@ void body(void* parameters)
       pmsis_exit(-1);
     }
     PRINTF("Stack size is %d and %d\n",CL_STACK_SIZE,CL_SLAVE_STACK_SIZE );
-    memset(cl_task, 0, sizeof(struct pi_cluster_task));
-    cl_task->entry = (void *) &nn_inference;
+    pi_cluster_task(cl_task, &nn_inference, NULL);
+    pi_cluster_task_stacks(cl_task, NULL, CL_SLAVE_STACK_SIZE);
+    #if defined(__GAP8__)
+    cl_task->entry = &nn_inference;
     cl_task->stack_size = CL_STACK_SIZE;
     cl_task->slave_stack_size = CL_SLAVE_STACK_SIZE;
-    cl_task->arg = NULL;
+    #endif
 
     // Execute the function "nn_inference" on the cluster.
     pi_cluster_send_task_to_cl(&cluster_dev, cl_task);
