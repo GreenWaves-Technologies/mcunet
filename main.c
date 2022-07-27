@@ -79,7 +79,7 @@ void body(void* parameters)
     }
     PRINTF("Network init done\n");
 
-    cl_task = pmsis_l2_malloc(sizeof(struct pi_cluster_task));
+    cl_task = pi_l2_malloc(sizeof(struct pi_cluster_task));
     if(cl_task==NULL) {
       printf("pi_cluster_task alloc Error!\n");
       pmsis_exit(-1);
@@ -96,7 +96,7 @@ void body(void* parameters)
     // Execute the function "nn_inference" on the cluster.
     pi_cluster_send_task_to_cl(&cluster_dev, cl_task);
 
-    pmsis_l2_malloc_free(cl_task, sizeof(struct pi_cluster_task));
+    pi_l2_free(cl_task, sizeof(struct pi_cluster_task));
     
     MCUNetCNN_Destruct();
 
