@@ -2,7 +2,8 @@ set log_level INFO
 set debug true
 adjust
 fusions --scale8
-imageformat input_1 rgb888 offset_int8
+qtune --step * use_ne16=true hwc=true
+set input_norm_func 'x:(x/255 - 0.5)/0.5'
 
 # RAM/FLASH Settings
 set l3_ram_device $(MODEL_L3_RAM)
