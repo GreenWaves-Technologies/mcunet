@@ -5,6 +5,8 @@
 #include "Gap.h"
 #include "setup.h"
 #include "MCUNetKernels.h"
+#include "measurments_utils.h"
+
 
 #ifdef MODEL_NE16
 PI_L2 unsigned char network_output[NETWORK_CLASSES];
@@ -22,13 +24,18 @@ static void nn_inference()
     gap_cl_resethwtimer();
     #endif
 
+GPIO_HIGH();
     detector_status = MCUNetCNN(network_output);
+GPIO_LOW();
 
     return;
 }
 
 void body(void)
 {
+    OPEN_GPIO_MEAS();
+    GPIO_LOW();
+
     /* Configure And open cluster. */
     struct pi_device cluster_dev;
     struct pi_cluster_conf cl_conf;
