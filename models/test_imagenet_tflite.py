@@ -7,4 +7,4 @@ model_path = sys.argv[1]
 model_name = os.path.splitext(model_path)[0]
 dataset_path = sys.argv[2]
 print(f"testing model {model_path} on dataset {dataset_path}")
-test_imagenet_tflite(model_path, dataset_path, f"{model_name}_tflite.log", ignore_first_class=True)
+test_imagenet_tflite(model_path, dataset_path, f"{model_name}_tflite.log")

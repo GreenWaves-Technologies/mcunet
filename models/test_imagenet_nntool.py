@@ -28,4 +28,4 @@ if ext != ".json":
 	)
 
 is_ne16 = any(qrec.cache.get("ne16")  for qrec in G.quantization.values())
-test_imagenet_nntool(G, dataset_path, f"{model_name}_nntool{'_ne16' if is_ne16 else '_sw'}.log", ignore_first_class=True)
+test_imagenet_nntool(G, dataset_path, f"{model_name}_nntool{'_ne16' if is_ne16 else '_sw'}.log")
