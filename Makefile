@@ -62,8 +62,8 @@ endif
 
 READFS_FILES+=$(realpath $(DATA_FILES))
 
-# all depends on the model
-all:: model
+# build depends on the model
+build:: model
 
 clean:: clean_model
 
