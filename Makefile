@@ -61,6 +61,9 @@ APP_CFLAGS += -DGPIO_MEAS
 endif
 
 READFS_FILES+=$(realpath $(DATA_FILES))
+ifneq ($(MODEL_SEC_L3_FLASH), "")
+  runner_args += --flash-property=$(MODEL_SEC_TENSORS)@mram:readfs:files
+endif
 
 # build depends on the model
 build:: model

@@ -80,3 +80,9 @@ The comparison metrics table for all of the models is the following:
 | MCUNet 512kB-2MB TFlite Int8  |  67.68 |  87.64  |
 | MCUNet 512kB-2MB ONNX GAP Int8  |  67.04 |  87.20 |
 | MCUNet 512kB-2MB TFlite GAP Int8  |  67.07 |  87.25 |
+
+New
+| MODEL | Top-1 Accuracy, % | Top-5 Accuracy, % |
+|-------|------------------------|------------------------|
+| MCUNet 512kB-2MB TFlite GAP NE16 Int8  |  67.12 |  87.57 |
+| MCUNet 512kB-2MB TFlite GAP SQ8 Int8  |  67.21 |  87.52 |
