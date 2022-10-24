@@ -16,74 +16,57 @@ io=host
 
 MODEL_PREFIX=MCUNet
 
-RAM_FLASH_TYPE ?= HYPER
-#PMSIS_OS=freertos
-
-ifeq '$(RAM_FLASH_TYPE)' 'HYPER'
-APP_CFLAGS += -DUSE_HYPER
-MODEL_L3_EXEC=hram
-MODEL_L3_CONST=hflash
-else
-APP_CFLAGS += -DUSE_SPI
-CONFIG_SPIRAM = 1
-MODEL_L3_EXEC=qspiram
-MODEL_L3_CONST=qpsiflash
-endif
-
 $(info Building NNTOOL model)
 NNTOOL_EXTRA_FLAGS ?= 
 
 include common/model_decl.mk
+FLASH_TYPE ?= DEFAULT
+RAM_TYPE   ?= DEFAULT
 
-
-ifeq '$(TARGET_CHIP_FAMILY)' 'GAP9'
-  TOTAL_STACK_SIZE = $(shell expr $(CLUSTER_STACK_SIZE) \+ $(CLUSTER_SLAVE_STACK_SIZE) \* 8)
-  FREQ_CL?=370
-  FREQ_FC?=370
-  MODEL_L1_MEMORY=$(shell expr 120000 \- $(TOTAL_STACK_SIZE))
-  MODEL_L2_MEMORY=1350000
-  MODEL_L3_MEMORY=8000000
-else
-  TOTAL_STACK_SIZE = $(shell expr $(CLUSTER_STACK_SIZE) \+ $(CLUSTER_SLAVE_STACK_SIZE) \* 7)
-  FREQ_CL?=175
-  FREQ_FC?=250
-  MODEL_L1_MEMORY=45000
-  MODEL_L2_MEMORY?=200000
-  MODEL_L3_MEMORY=8000000
+ifeq '$(FLASH_TYPE)' 'HYPER'
+  MODEL_L3_FLASH=AT_MEM_L3_HFLASH
+else ifeq '$(FLASH_TYPE)' 'MRAM'
+  MODEL_L3_FLASH=AT_MEM_L3_MRAMFLASH
+  READFS_FLASH = target/chip/soc/mram
+else ifeq '$(FLASH_TYPE)' 'QSPI'
+  MODEL_L3_FLASH=AT_MEM_L3_QSPIFLASH
+  READFS_FLASH = target/board/devices/spiflash
+else ifeq '$(FLASH_TYPE)' 'OSPI'
+  MODEL_L3_FLASH=AT_MEM_L3_OSPIFLASH
+  #READFS_FLASH = target/board/devices/ospiflash
+else ifeq '$(FLASH_TYPE)' 'DEFAULT'
+  MODEL_L3_FLASH=AT_MEM_L3_DEFAULTFLASH
 endif
 
-#pulpChip = GAP
-#PULP_APP = $(MODEL_PREFIX)
+ifeq '$(RAM_TYPE)' 'HYPER'
+  MODEL_L3_RAM=AT_MEM_L3_HRAM
+else ifeq '$(RAM_TYPE)' 'QSPI'
+  MODEL_L3_RAM=AT_MEM_L3_QSPIRAM
+else ifeq '$(RAM_TYPE)' 'OSPI'
+  MODEL_L3_RAM=AT_MEM_L3_OSPIRAM
+else ifeq '$(RAM_TYPE)' 'DEFAULT'
+  MODEL_L3_RAM=AT_MEM_L3_DEFAULTRAM
+endif
 
-CNN_KERNELS_SRC = \
-  $(wildcard $(TILER_CNN_KERNEL_PATH_SQ8)/CNN_*SQ8.c) \
-  $(TILER_CNN_KERNEL_PATH_SQ8)/CNN_AT_Misc.c \
-  $(TILER_CNN_KERNEL_PATH)/CNN_Copy.c
+APP_SRCS = main.c $(MODEL_GEN_C) $(MODEL_COMMON_SRCS) $(CNN_LIB)
 
+APP_CFLAGS += -I. -I$(GAP_SDK_HOME)/utils/power_meas_utils -I$(MODEL_COMMON_INC) -I$(TILER_EMU_INC) -I$(TILER_INC) $(CNN_LIB_INCLUDE) -I$(MODEL_BUILD)
 
-APP_SRCS = \
-  main.c \
-  $(MODEL_BUILD)/$(MODEL_PREFIX)Kernels.c \
-  $(CNN_KERNELS_SRC)\
-  $(GAP_LIB_PATH)/img_io/ImgIO.c
-
-APP_INC += . \
-	$(MODEL_BUILD) \
-	$(TILER_INC) \
-	$(TILER_CNN_KERNEL_PATH_FP16) \
-  $(TILER_CNN_KERNEL_PATH_SQ8) \
-	$(TILER_CNN_KERNEL_PATH) \
-	$(GAP_LIB_PATH)/include \
-    
-
-DATA_FILES = $(MODEL_BUILD)/$(MODEL_PREFIX)_L3_Flash_Const.dat
-APP_CFLAGS += -O3 -g -DPERF_COUNT=0 -DCI=1
-
+DATA_FILES  = $(MODEL_BUILD)/$(MODEL_PREFIX)_L3_Flash_Const.dat
+APP_CFLAGS += -O3 -g -DPERF_COUNT=0 -DCI=1 -DPERF 
+APP_CFLAGS += -DSTACK_SIZE=$(CLUSTER_STACK_SIZE) -DSLAVE_STACK_SIZE=$(CLUSTER_SLAVE_STACK_SIZE)
+APP_CFLAGS += -DFREQ_FC=$(FREQ_FC) -DFREQ_CL=$(FREQ_CL) -DFREQ_PE=$(FREQ_PE)
+ifdef MEAS
+APP_CFLAGS += -DGPIO_MEAS
+endif
 
 READFS_FILES+=$(realpath $(DATA_FILES))
+ifneq ($(MODEL_SEC_L3_FLASH), "")
+  runner_args += --flash-property=$(MODEL_SEC_TENSORS)@mram:readfs:files
+endif
 
-# all depends on the model
-all:: model
+# build depends on the model
+build:: model
 
 clean:: clean_model
 

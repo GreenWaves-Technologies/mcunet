@@ -4,5 +4,6 @@
 #include "Gap.h"
 
 #define MCUNet_L3_Flash 0
+#define MCUNet_L3_PrivilegedFlash 0
 
 #endif //__MCUNET_H__
