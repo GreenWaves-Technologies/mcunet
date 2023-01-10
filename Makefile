@@ -15,12 +15,13 @@ include common.mk
 io=host
 
 MODEL_PREFIX=MCUNet
+AT_IMAGE = $(CURDIR)/dataset/goldfish.ppm
 
 $(info Building NNTOOL model)
 NNTOOL_EXTRA_FLAGS ?= 
 
 include common/model_decl.mk
-FLASH_TYPE ?= DEFAULT
+FLASH_TYPE ?= MRAM
 RAM_TYPE   ?= DEFAULT
 
 ifeq '$(FLASH_TYPE)' 'HYPER'
@@ -55,15 +56,12 @@ APP_CFLAGS += -I. -I$(GAP_SDK_HOME)/utils/power_meas_utils -I$(MODEL_COMMON_INC)
 DATA_FILES  = $(MODEL_BUILD)/$(MODEL_PREFIX)_L3_Flash_Const.dat
 APP_CFLAGS += -O3 -g -DPERF_COUNT=0 -DCI=1 -DPERF 
 APP_CFLAGS += -DSTACK_SIZE=$(CLUSTER_STACK_SIZE) -DSLAVE_STACK_SIZE=$(CLUSTER_SLAVE_STACK_SIZE)
-APP_CFLAGS += -DFREQ_FC=$(FREQ_FC) -DFREQ_CL=$(FREQ_CL) -DFREQ_PE=$(FREQ_PE)
+APP_CFLAGS += -DFREQ_FC=$(FREQ_FC) -DFREQ_CL=$(FREQ_CL) -DFREQ_PE=$(FREQ_PE) -DAT_IMAGE=$(AT_IMAGE)
 ifdef MEAS
 APP_CFLAGS += -DGPIO_MEAS
 endif
 
 READFS_FILES+=$(realpath $(DATA_FILES))
-ifneq ($(MODEL_SEC_L3_FLASH), "")
-  runner_args += --flash-property=$(MODEL_SEC_TENSORS)@mram:readfs:files
-endif
 
 # build depends on the model
 build:: model

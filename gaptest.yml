@@ -1,4 +1,5 @@
 name: MCUNet
+builder: cmake
 boards: []
 platforms: 
     - board

@@ -7,11 +7,13 @@
 #include "MCUNetKernels.h"
 #include "measurments_utils.h"
 
+#define __XSTR(__s) __STR(__s)
+#define __STR(__s) #__s
 
 #ifdef MODEL_NE16
-PI_L2 unsigned char network_output[NETWORK_CLASSES];
+unsigned char network_output[NETWORK_CLASSES];
 #else
-PI_L2 signed char network_output[NETWORK_CLASSES];
+signed char network_output[NETWORK_CLASSES];
 #endif
 
 int detector_status;
@@ -65,7 +67,7 @@ void body(void)
 
     int input_size = IMAGE_WIDTH*IMAGE_HEIGHT*sizeof(char);
     //char* dir_name = "quant_data";
-    char* filename = "../../../dataset/goldfish.ppm";
+    char* filename = __XSTR(AT_IMAGE);
     if (ReadImageFromFile(filename,
         IMAGE_WIDTH, IMAGE_HEIGHT, IMAGE_CHANNELS,
         Input_1, INPUT_SIZE*sizeof(char), IMGIO_OUTPUT_CHAR, 0))
@@ -86,22 +88,6 @@ void body(void)
 
     // Execute the function "nn_inference" on the cluster.
     pi_cluster_send_task_to_cl(&cluster_dev, &cl_task);
-    
-#ifdef PERF
-    {
-      unsigned int TotalCycles = 0, TotalOper = 0;
-      printf("\n");
-      for (unsigned int i=0; i<(sizeof(AT_GraphPerf)/sizeof(unsigned int)); i++) {
-        TotalCycles += AT_GraphPerf[i]; TotalOper += AT_GraphOperInfosNames[i];
-      }
-      for (unsigned int i=0; i<(sizeof(AT_GraphPerf)/sizeof(unsigned int)); i++) {
-        printf("%45s: Cycles: %10u, Cyc%%: %5.1f%%, Operations: %10u, Op%%: %5.1f%%, Operations/Cycle: %f\n", AT_GraphNodeNames[i], AT_GraphPerf[i], 100*((float) (AT_GraphPerf[i]) / TotalCycles), AT_GraphOperInfosNames[i], 100*((float) (AT_GraphOperInfosNames[i]) / TotalOper), ((float) AT_GraphOperInfosNames[i])/ AT_GraphPerf[i]);
-      }
-      printf("\n");
-      printf("%45s: Cycles: %10u, Cyc%%: 100.0%%, Operations: %10u, Op%%: 100.0%%, Operations/Cycle: %f\n", "Total", TotalCycles, TotalOper, ((float) TotalOper)/ TotalCycles);
-      printf("\n");
-    }
-#endif
 
     MCUNetCNN_Destruct();
 
@@ -121,10 +107,31 @@ void body(void)
     PRINTF("Predicted class:\t%d\n", outclass + 1);
     PRINTF("With confidence:\t%d\n", max_score);
 
+#ifdef PERF
+    unsigned int TotalCycles = 0, TotalOper = 0;
+    {
+      printf("\n");
+      for (unsigned int i=0; i<(sizeof(AT_GraphPerf)/sizeof(unsigned int)); i++) {
+        TotalCycles += AT_GraphPerf[i]; TotalOper += AT_GraphOperInfosNames[i];
+      }
+      for (unsigned int i=0; i<(sizeof(AT_GraphPerf)/sizeof(unsigned int)); i++) {
+        printf("%45s: Cycles: %10u, Cyc%%: %5.1f%%, Operations: %10u, Op%%: %5.1f%%, Operations/Cycle: %f\n", AT_GraphNodeNames[i], AT_GraphPerf[i], 100*((float) (AT_GraphPerf[i]) / TotalCycles), AT_GraphOperInfosNames[i], 100*((float) (AT_GraphOperInfosNames[i]) / TotalOper), ((float) AT_GraphOperInfosNames[i])/ AT_GraphPerf[i]);
+      }
+      printf("\n");
+      printf("%45s: Cycles: %10u, Cyc%%: 100.0%%, Operations: %10u, Op%%: 100.0%%, Operations/Cycle: %f\n", "Total", TotalCycles, TotalOper, ((float) TotalOper)/ TotalCycles);
+      printf("\n");
+    }
+#endif
 
     #ifdef CI
     if(outclass + 1 != 2 && max_score < 65){
         printf("Eval Error...\n");
+        pmsis_exit(-1);
+    }
+    #endif
+    #ifdef PERF_CI
+    if(TotalCycles > PERF_CI){
+        printf("Perf Regression, expected cycles: %d\n", PERF_CI);
         pmsis_exit(-1);
     }
     #endif
@@ -164,5 +171,5 @@ void body(void)
 
 int main(int argc, char* argv[])
 {
-    return pmsis_kickoff(body);
+    body();
 }
