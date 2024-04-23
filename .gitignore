@@ -1,3 +1,4 @@
 BUILD*
 log_meas
 build
+sdk_gaptest*.config
