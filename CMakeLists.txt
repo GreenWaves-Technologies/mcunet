@@ -50,31 +50,72 @@ set(IMAGE dataset/goldfish.ppm)
 ###############################################################################
 # NNTool Variables 
 ###############################################################################
-if (CONFIG_MODEL_ONNX)
-set(MODEL_FORMAT onnx)
-else()
-set(MODEL_FORMAT tflite)
-message(STATUS "${APP_MSG_PREFIX} TFLITE")
-endif()
-set(CONFIG_NNTOOL_MODEL_PATH models/mcunet-512kb-2mb_imagenet.${MODEL_FORMAT})
-set(CONFIG_NNTOOL_SCRIPT_PATH models/nntool_scripts/nntool_script_${MODEL_FORMAT})
-
 if(CONFIG_MODEL_NE16)
-    message(STATUS "${APP_MSG_PREFIX} >> Building NE16 model <<")
-    set(CONFIG_NNTOOL_SCRIPT_PATH models/nntool_scripts/nntool_script_${MODEL_FORMAT}_ne16)
+  message(STATUS "${APP_MSG_PREFIX} >> Building NE16 model <<")
+  set(QUANT_TYPE "ne16")
+else()
+  message(STATUS "${APP_MSG_PREFIX} >> Building SQ8 model <<")
+  set(QUANT_TYPE "sq8")
 endif()
 
-autotiler_define_gen_names(${TARGET_NAME})
-nntool_setup(${TARGET_NAME})
-autotiler_setup(${TARGET_NAME})
+if (CONFIG_MODEL_ONNX)
+  set(MODEL_FORMAT onnx)
+  set(GEN_FLAGS "--quant_dataset_path=${CMAKE_SOURCE_DIR}/quant_data_ppm/")
+  message(STATUS "${APP_MSG_PREFIX} ONNX")
+else()
+  set(MODEL_FORMAT tflite)
+  set(GEN_FLAGS "--load_quantization")
+  message(STATUS "${APP_MSG_PREFIX} TFLITE")
+endif()
+
+set(TRAINED_MODEL_PATH "${CMAKE_SOURCE_DIR}/models/mcunet-512kb-2mb_imagenet.${MODEL_FORMAT}")
+
+
+set(NN_NNTOOL_SCRIPT ${CMAKE_SOURCE_DIR}/models/generate_at_model.py)
+set(NN_DIR  ${CMAKE_BINARY_DIR}/BUILD_MODEL_NN)
+set(NN_AT_MODEL_PATH      ${NN_DIR}/MCUNetModel.c)
+set(NN_AT_TENSORS_DIR     ${NN_DIR}/tensors)
+set(NN_EXPRESSION_KERNELS ${NN_DIR}/NN_Expression_Kernels.c)
+autotiler_add_model(
+  TARGET_NAME "MCUNet"
+  MODEL_PATH ${NN_AT_MODEL_PATH}
+  MODEL_TENSORS_DIR ${NN_AT_TENSORS_DIR}
+  MODEL_BUILDDIR ${NN_DIR}
+  PRI1_USED TRUE
+  PRI1_FLASH mram
+  PRI2_FILENAME "L3_Flash_Const.dat"
+  L1_MEMORY ${CONFIG_MODEL_L1_MEMORY}
+  L2_MEMORY ${CONFIG_MODEL_L2_MEMORY}
+  L3_MEMORY ${CONFIG_MODEL_L3_MEMORY}
+  L2STATIC_MEMORY ${CONFIG_MODEL_L2STATIC_MEMORY}
+  L3STATIC_MEMORY ${CONFIG_MODEL_L3STATIC_MEMORY}
+)
+add_custom_command(
+  OUTPUT ${NN_AT_MODEL_PATH} ${NN_AT_TENSORS_DIR} ${NN_EXPRESSION_KERNELS}
+  COMMENT "Generate the autotiler model: ${NN_AT_MODEL_PATH}"
+  DEPENDS ${NN_NNTOOL_SCRIPT}
+  COMMAND python3 ${NN_NNTOOL_SCRIPT} --trained_model=${TRAINED_MODEL_PATH}
+                                      --quant_type=${QUANT_TYPE}
+                                      --expressions_file_path=${NN_EXPRESSION_KERNELS}
+                                      --at_model_path=${NN_AT_MODEL_PATH}
+                                      --tensors_dir=${NN_AT_TENSORS_DIR}
+                                      --flash_type="mram"
+                                      ${GEN_FLAGS}
+                                      --test_image=${CMAKE_CURRENT_SOURCE_DIR}/${IMAGE}
+)
+add_custom_target(clean_model
+  COMMENT "clean_model: removing ${COMMON_MODEL_BUILDDIR}/${MODEL_GEN}"
+  COMMAND rm -rf ${NN_AT_MODEL_PATH}
+)
 
 ###############################################################################
 # Application dependencies
 ###############################################################################
 
-list(APPEND TARGET_SRCS ${MAIN}
-                        ${CNN_LIB}
-                        ${COMMON_MODEL_BUILDDIR}/${KERNEL_C}
+list(APPEND TARGET_SRCS   ${MAIN}
+                          ${CNN_LIB}
+                          ${KERNEL_C_PATHS}
+                          ${NN_EXPRESSION_KERNELS}
 )
 
 list(APPEND TARGET_INCS -I${TILER_INC}
@@ -91,17 +132,22 @@ list(APPEND TARGET_CFLAGS   -gdwarf-2
                             -mno-memcpy
                             -fno-tree-loop-distribute-patterns)
 
-math(EXPR FREQ_CL_MHZ "${CONFIG_FREQUENCY_CLUSTER}/1000/1000")
-math(EXPR FREQ_FC_MHZ "${CONFIG_FREQUENCY_FC}/1000/1000")
-math(EXPR FREQ_PE_MHZ "${CONFIG_FREQUENCY_PERIPH}/1000/1000")
+if (CONFIG_MAX_PERF)
+  set(FREQ 370)
+  set(VOLTAGE 800)
+elseif(CONFIG_MAX_EFFICIENCY)
+  set(FREQ 240)
+  set(VOLTAGE 650)
+endif()
 list(APPEND TARGET_PREPROCESSOR -DPERF
                                 -DAT_MODEL_PREFIX=${MODEL_NAME}
                                 -DSTACK_SIZE=${CONFIG_CL_MASTER_CORE_STACK_SIZE}
                                 -DSLAVE_STACK_SIZE=${CONFIG_CL_SLAVE_CORE_STACK_SIZE}
                                 -DAT_IMAGE=${CMAKE_CURRENT_SOURCE_DIR}/${IMAGE}
-                                -DFREQ_CL=${FREQ_CL_MHZ}
-                                -DFREQ_FC=${FREQ_FC_MHZ}
-                                -DFREQ_PE=${FREQ_PE_MHZ}
+                                -DFREQ_CL=${FREQ}
+                                -DFREQ_FC=${FREQ}
+                                -DFREQ_PE=${FREQ}
+                                -DVOLTAGE=${VOLTAGE}
                                 -DAT_CNN=${AT_CNN})
 if (DEFINED PERF_CI)
 list(APPEND TARGET_PREPROCESSOR -DPERF_CI=${PERF_CI})

@@ -32,10 +32,6 @@ menu "SqueezeNet menu"
     choice NNTOOL_SCRIPT
         prompt "NNTool Script"
         config MODEL_SQ8
-            bool "SQ8 Model"
-            select CNN_SQ8
-
-        config MODEL_SQ8_HWC
             bool "SQ8 HWC Model"
             select CNN_SQ8
 
@@ -52,6 +48,17 @@ menu "SqueezeNet menu"
 
         config MODEL_ONNX
             bool "ONNX Model"
+    endchoice
+
+    choice GAP9_OP_POINT
+        prompt "Gap9 DVFS Operating Point"
+
+        config MAX_PERF
+            bool "370MHz @ 0.8V"
+            default y
+
+        config MAX_EFFICIENCY
+            bool "240MHz @ 0.65V"
     endchoice
 
 endmenu

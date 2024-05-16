@@ -33,7 +33,7 @@ GPIO_LOW();
     return;
 }
 
-void body(void)
+int main(int argc, char* argv[])
 {
     OPEN_GPIO_MEAS();
     GPIO_LOW();
@@ -75,6 +75,9 @@ void body(void)
         PRINTF("Image read failed\n");
         pmsis_exit(-2);
     }
+	#ifndef MODEL_NE16 // HWC does not have the image formatter in front
+		for (int i=0; i<INPUT_SIZE; i++) Input_1[i] -= 128;
+    #endif
     printf("Finished reading image\n");
 
     struct pi_cluster_task cl_task;
@@ -167,9 +170,4 @@ void body(void)
     #endif
 
     pmsis_exit(0);
-}
-
-int main(int argc, char* argv[])
-{
-    body();
 }
