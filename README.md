@@ -3,9 +3,9 @@
 ## Original repository
 
 ONNX model is converted from PyTorch model which is both with quantized TFLite version are taken from the original
-[MCUNet repo](https://github.com/mit-han-lab/tinyml/tree/master/mcunet).
+[MCUNet repo](https://github.com/mit-han-lab/mcunet/tree/master).
 We are using [mcunet-512kb-2mb_imagenet.pth](https://hanlab.mit.edu/projects/tinyml/mcunet/release/mcunet-512kb-2mb_imagenet.pth)
-and [mcunet-512kb-2mb_imagenet.pth](https://hanlab.mit.edu/projects/tinyml/mcunet/release/mcunet-512kb-2mb_imagenet.tflite) respectively.
+and [mcunet-512kb-2mb_imagenet.pth](https://hanlab.mit.edu/projects/tinyml/mcunet/release/mcunet-512kb-2mb_imagenet.tflite) respectively. (The models might be available only from the github link)
 
 ## Supported Models
 
@@ -34,43 +34,6 @@ make clean all run platform=gvsoc MODEL_FORMAT=tflite
 ```
 
 ## Evaluation
-
-For evaluation process we suggest to use emulator as it tremendously increase its speed.
-To rebuild the project with it, navigate to `accuracy_on_validation` folder:
-```
-cd accuracy_on_validation
-```
-Then, you will need to create a symbolic link to quantization data by running:
-```
-ln -s ../quant_data_ppm/ quant_data_ppm
-```
-and finally run:
-```
-make all -f emul.mk MODEL_FORMAT=onnx
-```
-or
-```
-make all -f emul.mk MODEL_FORMAT=tflite
-```
-depending on chosen model.
-
-To evaluate the model you will need to dump the results on the properly preprocessed data which is transformed the same way it was for the original model.
-Download evaluation data by running the appropriate script:
-```
-./download_eval_data.sh
-```
-And then to preprocess it, run:
-```
-python3 preprocess_gap_images.py --val-dir imagenet_gap/val  --out-dir preprocessed_data
-```
-After that you can dump the results with:
-```
-python3 get_gap_results.py --in_dir preprocessed_data --out_dir gap_results 
-```
-Next step is to evaluate the obtained output for each image with the command below:
-```
-python3 eval_gap_results.py --val-dir imagenet_gap/val --gap-dir gap_results
-```
 
 The comparison metrics table for all of the models is the following:
 | MODEL | Top-1 Accuracy, % | Top-5 Accuracy, % |
