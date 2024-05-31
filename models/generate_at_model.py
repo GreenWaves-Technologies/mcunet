@@ -1,3 +1,4 @@
+import datetime
 import os
 import argparse
 import argcomplete
@@ -7,7 +8,10 @@ import numpy as np
 import pickle
 
 from nntool.api import NNGraph
+from nntool.api.types import ConstantInputNode
 from nntool.api.utils import quantization_options, model_settings
+from nntool_python_utils.imagenet_utils import test_imagenet_nntool
+from onnx_tflite_exec import *
 
 CACHED_STATS = "/tmp/mcunet_stats.pickle"
 
@@ -24,7 +28,7 @@ def create_model_parser():
                         help="Path to the quantization dataset path")
     parser.add_argument('--load_quantization', action="store_true",
                         help="If the model is already tflite quantized, load quantization, otherwise, use the quant_dataset_path")
-    
+
     # At options
     parser.add_argument('--tensors_dir', default="tensors",
                         help="Where nntool stores the weights/bias tensors dir (only used in generate and performance mode)")
@@ -38,6 +42,10 @@ def create_model_parser():
 
     # Test image
     parser.add_argument('--test_image', default=None, help="Path to image to test")
+
+    # Test ImageNet
+    parser.add_argument('--imagenet_dataset', default=None, help="Path to ImageNet TestSet")
+
     return parser
 
 def representative_dataset(q_dataset_path):
@@ -80,9 +88,14 @@ def build_nntool_graph(trained_model, quant_type, load_quantization, quant_datas
         stats,
         graph_options=quantization_options(
             use_ne16="ne16" in quant_type,
-            hwc=True
+            hwc=True,
+            # Load quantization options for the weights
+            w_qtype_from_import=load_quantization,
         ),
     )
+
+    # G.draw(quant_labels=True, filepath="/tmp/mcunet_draw_q", view=False, nodes=G.nodes())
+    # G.draw(quant_labels=False, filepath="/tmp/mcunet_draw", view=False)
 
     print(G.qshow([G[0]]))
     print(G.qshow([G[-1]]))
@@ -104,30 +117,56 @@ if __name__ == "__main__":
     )
     G.name = "MCUNet"
     if args.test_image:
-        img = (np.array(Image.open(args.test_image).resize((160, 160))).astype(np.float32) / 255 - 0.5) / 0.5
+        img = Image.open(args.test_image)
+        # img = (np.array(img.resize((160, 160))).astype(np.float32) / 255 - 0.5) / 0.5
+        in_q = G.quantization["input_1"].out_qs[0]
+        img = in_q.dequantize(np.array(img))
         nntool_out = G.execute([img], dequantize=False, quantize=True)
-        print(f"NNTool predicted class on {args.test_image}: {np.argmax(nntool_out[-1][0]) + 1} with confidence {np.max(nntool_out[-1][0])}")
 
+        nntool_class = np.argmax(nntool_out[-1][0])
+        nntool_confidence_q = nntool_out[-1][0][nntool_class]
+        nntool_confidence_f = G.quantization["output_1"].out_qs[0].dequantize(nntool_out[-1][0][nntool_class])
+        print(f"NNTool predicted class on {args.test_image}: {nntool_class+1} with confidence {nntool_confidence_q} ({nntool_confidence_f})")
 
-    G[0].at_options.allocate = 1
-    expressions_file_name = os.path.splitext(os.path.split(args.expressions_file_path)[-1])[0]
-    G.gen_at_model(
-        write_constants=True,
-        directory=os.path.split(args.at_model_path)[0],
-        settings=model_settings(
-            tensor_directory=args.tensors_dir,
-            model_directory=os.path.split(args.at_model_path)[0],
-            model_file=os.path.split(args.at_model_path)[1],
-            l3_ram_device="AT_MEM_L3_DEFAULTRAM",
-            l3_flash_device="AT_MEM_L3_DEFAULTFLASH" if args.flash_type == "flash" else "AT_MEM_L3_MRAMFLASH",
-            graph_l1_promotion=2,
-            graph_size_opt=2,
-            graph_const_exec_from_flash=True,
-            graph_async_fork=True,
-            graph_trace_exec=args.trace_exec,
-            # privileged_l3_flash_device="AT_MEM_L3_MRAMFLASH",
-            # privileged_l3_flash_size=int(1.8*1024*1024),
-            basic_kernel_header_file=f"{expressions_file_name}.h",
-            basic_kernel_source_file=f"{expressions_file_name}.c",
+        if args.trained_model.endswith("tflite"):
+            tflite_out_q, out_scale, out_zp = execute_tflite(args.trained_model, img)
+            tflite_out_q = tflite_out_q.flatten()
+            tflite_class = np.argmax(tflite_out_q)
+            tflite_out_f = (tflite_out_q - out_zp) * out_scale
+            print(f"TFLite predicted class on {args.test_image}: {tflite_class+1} with confidence {tflite_out_q[tflite_class]} ({tflite_out_f[tflite_class]})")
+
+        else:
+            chw_img = img.transpose((2, 0, 1))
+            onnx_out_f = execute_onnx(args.trained_model, chw_img)
+            onnx_out_f = onnx_out_f.flatten()
+            onnx_class = np.argmax(onnx_out_f)
+            print(f"onnx predicted class on {args.test_image}: {onnx_class+1} with confidence ({onnx_out_f[onnx_class]})")
+
+    if args.imagenet_dataset:
+        now = datetime.now()
+        log_file = f"log_accuracy/{os.path.splitext(os.path.split(args.trained_model)[-1])[0]}_nntool_{now.strftime('%H-%M_%m-%d-%Y')}.log"
+        os.makedirs("log_accuracy", exist_ok=True)
+        test_imagenet_nntool(G, args.imagenet_dataset, log_file)
+    else:
+        G[0].at_options.allocate = 1
+        expressions_file_name = os.path.splitext(os.path.split(args.expressions_file_path)[-1])[0]
+        G.gen_at_model(
+            write_constants=True,
+            directory=os.path.split(args.at_model_path)[0],
+            settings=model_settings(
+                tensor_directory=args.tensors_dir,
+                model_directory=os.path.split(args.at_model_path)[0],
+                model_file=os.path.split(args.at_model_path)[1],
+                l3_ram_device="AT_MEM_L3_DEFAULTRAM",
+                l3_flash_device="AT_MEM_L3_DEFAULTFLASH" if args.flash_type == "flash" else "AT_MEM_L3_MRAMFLASH",
+                graph_l1_promotion=2,
+                graph_size_opt=2,
+                graph_const_exec_from_flash=True,
+                graph_async_fork=True,
+                graph_trace_exec=args.trace_exec,
+                # privileged_l3_flash_device="AT_MEM_L3_MRAMFLASH",
+                # privileged_l3_flash_size=int(1.8*1024*1024),
+                basic_kernel_header_file=f"{expressions_file_name}.h",
+                basic_kernel_source_file=f"{expressions_file_name}.c",
+            )
         )
-    )
